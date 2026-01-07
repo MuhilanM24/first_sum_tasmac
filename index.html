@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calculator</title>
+  <style>
+    body { background: aquamarine; font-family: Arial, sans-serif; }
+    h1 { text-align: center; margin-top: 10px; }
+    form {
+      background: rgb(191, 183, 187);
+      text-align: center;
+      padding: 15px 18px;
+      margin: 10px auto;
+      width: fit-content;
+      border-radius: 10px;
+    }
+    table {
+      background: antiquewhite;
+      margin: 12px auto;
+      border-collapse: collapse;
+      width: 95%;
+      max-width: 1100px;
+    }
+    th, td { border: 1px solid #333; padding: 6px 10px; }
+    th { background: #f1e2c6; }
+    .groupTitle { text-align: center; margin: 18px 0 6px; }
+    .totalsTable {
+      width: 95%;
+      max-width: 1100px;
+      margin: 0 auto 18px;
+      background: yellow;
+      font-weight: bold;
+    }
+    #qwe { background: red; color: #fff; padding: 8px 14px; border: 0; cursor: pointer; }
+    #muhil { background: green; color: #fff; padding: 8px 14px; border: 0; cursor: pointer; }
+    input, select { padding: 6px; }
+
+    @media print {
+  form, #printBtn, #muhil, #qwe { display: none !important; }
+  body { background: white !important; }
+  table { width: 100% !important; max-width: 100% !important; }
+  .totalsTable { page-break-inside: avoid; }
+  h2 { page-break-after: avoid; }
+}
+
+  </style>
+</head>
+
+<body>
+  <h1>Add records</h1>
+
+  <form id="information">
+    <label for="brand">Brand name</label>
+    <input type="text" id="brand" placeholder="Type brand name..." autocomplete="off" />
+    <datalist id="suggestions"></datalist>
+
+    <br><br>
+
+    <label for="ml">ML</label>
+    <select id="ml" name="ml">
+      <option value="">select</option>
+      <option value="180">180 ml</option>
+      <option value="325">325 ml</option>
+      <option value="375">375 ml</option>
+      <option value="500">500 ml</option>
+      <option value="650">650 ml</option>
+      <option value="750">750 ml</option>
+      <option value="1000">1000 ml</option>
+    </select>
+
+    <br><br>
+
+    <label for="ob">Enter opening balance</label>
+    <input type="number" id="ob" name="ob" placeholder="Enter the number" />
+
+    <br><br>
+
+    <label for="cb">Enter closing balance</label>
+    <input type="number" id="cb" name="cb" placeholder="Enter the number" />
+
+    <br><br>
+
+    <label for="price">price</label>
+    <input type="number" id="price" name="price" placeholder="price" />
+
+    <br><br>
+
+    <input type="reset" value="clear" />
+    <input type="submit" value="submit" />
+
+    <br><br><hr><hr>
+
+    <button type="button" id="muhil" onclick="downloadCSV()">Download CSV</button>
+
+    <br><br><hr>
+
+    <button type="button" id="qwe" onclick="clearAll()">Clear table</button>
+    <br><br><hr>
+    <button type="button" id="printBtn" onclick="printReport()">Print / Save PDF</button>
+
+  </form>
+
+  <!-- 8 tables will always be shown here -->
+  <div id="groups"></div>
+
+<script>
+/* ---------------- PRICE CHART (PASTE YOUR FULL LIST HERE) ----------------
+   Keep same format: { brand: "...", ml: 180, price: 140 }
+*/
+const PRICELIST = [
+  // SAMPLE ONLY - replace with your big list from your file
+  { brand: "Old king xxxx rum", ml: 180, price: 140 },
+        { brand: "Old king xxxx rum", ml: 375, price: 280 },
+        { brand: "Old king xxxx rum", ml: 750, price: 560 },
+        { brand: "Mens club dlx bdy", ml: 180, price:140 },
+        { brand: "Mens club dlx bdy", ml: 375, price:280 },
+        { brand: "Mens club dlx bdy", ml: 750, price:560 },
+        { brand: "Binneys dlx bdy", ml: 180, price:140 },
+        { brand: "Binneys dlx bdy", ml: 375, price:280 },
+        { brand: "Binneys dlx bdy", ml: 750, price:560 },
+            { brand: "Diamond bdy", ml: 180, price:140 },
+        { brand: "Diamond bdy", ml: 375, price:280 },
+        { brand: "Diamond bdy", ml: 750, price:560 },
+            { brand: "Diamond why", ml: 180, price:140 },
+        { brand: "Diamond why", ml: 375, price:280 },
+        { brand: "Diamond why", ml: 750, price:560 },
+            { brand: "Diamond xxx rum", ml: 180, price:140 },
+        { brand: "Diamond xxx rum", ml: 375, price:280 },
+        { brand: "Diamond xxx rum", ml: 750, price:560 },
+            { brand: "Mclene bdy", ml: 180, price:140 },
+        { brand: "Mclene bdy", ml: 375, price:280 },
+        { brand: "Mclene bdy", ml: 750, price:560 },
+            { brand: "Old secret xxx rum", ml: 180, price:140 },
+        { brand: "Old secret xxx rum", ml: 375, price:280 },
+        { brand: "Old secret xxx rum", ml: 750, price:560 },
+            { brand: "OLd chef dlx bdy", ml: 180, price:140 },
+        { brand: "OLd chef dlx bdy", ml: 375, price:280 },
+        { brand: "OLd chef dlx bdy", ml: 750, price:560 },
+            { brand: "Imp express spl bdy", ml: 180, price:140 },
+        { brand: "Imp express spl bdy", ml: 375, price:280 },
+        { brand: "Imp express spl bdy", ml: 750, price:560 },
+            { brand: "Imp express spl rum", ml: 180, price:140 },
+        { brand: "Imp express spl rum", ml: 375, price:280 },
+        { brand: "Imp express spl rum", ml: 750, price:560 },
+            { brand: "Golden eagle dr ord bdy", ml: 180, price:140 },
+        { brand: "Golden eagle dr ord bdy", ml: 375, price:280 },
+        { brand: "Golden eagle dr ord bdy", ml: 750, price:560 },
+            { brand: "Old monk dlx rum", ml: 180, price:140 },
+        { brand: "Old monk dlx rum", ml: 375, price:280 },
+        { brand: "Old monk dlx rum", ml: 750, price:560 },
+            { brand: "Vorion no.1 ind bdy", ml: 180, price:140 },
+        { brand: "Vorion no.1 ind bdy", ml: 375, price:280 },
+        { brand: "Vorion no.1 ind bdy", ml: 750, price:560 },
+            { brand: "Vorion no.1 ind xxx rum", ml: 180, price:140 },
+        { brand: "Vorion no.1 ind xxx rum", ml: 375, price:280 },
+        { brand: "Vorion no.1 ind xxx rum", ml: 750, price:560 },
+            { brand: "Monitor ord 3D gold rum", ml: 180, price:140 },
+        { brand: "Monitor ord 3D gold rum", ml: 375, price:280 },
+        { brand: "Monitor ord 3D gold rum", ml: 750, price:560 },
+            { brand: "Monitor dlx bdy", ml: 180, price:140 },
+           
+        { brand: "Monitor dlx bdy", ml: 375, price:280 },
+        { brand: "Monitor dlx bdy", ml: 750, price:560 },
+            { brand: "Monitor dlx why", ml: 180, price:140 },
+        { brand: "Monitor dlx why", ml: 375, price:280 },
+        { brand: "Monitor dlx why", ml: 750, price:560 },
+            { brand: "Top star spl bdy", ml: 180, price:140 },
+        { brand: "Top star spl bdy", ml: 375, price:280 },
+        { brand: "Top star spl bdy", ml: 750, price:560 },
+            { brand: "Old chef str xxx rum", ml: 180, price:140 },
+        { brand: "Old chef str xxx rum", ml: 375, price:280 },
+        { brand: "Old chef str xxx rum", ml: 750, price:560 },
+            { brand: "top star spl why", ml: 180, price:140 },
+        { brand: "top star spl why", ml: 375, price:280 },
+        { brand: "top star spl why", ml: 750, price:560 },
+            { brand: "Top star str xxx rum ", ml: 180, price:140 },
+        { brand: "Top star str xxx rum", ml: 375, price:280 },
+        { brand: "Top star str xxx rum", ml: 750, price:560 },
+            { brand: "Honey day bdy", ml: 180, price:140 },
+        { brand: "Honey day bdy", ml: 375, price:280 },
+        { brand: "Honey day bdy", ml: 750, price:560 },
+            { brand: "Old monster xxx rum", ml: 180, price:140 },
+        { brand: "Old monster xxx rum", ml: 375, price:280 },
+        { brand: "Old monster xxx rum", ml: 750, price:560 },
+            { brand: "Arabian pride dlx xxx rum", ml: 180, price:140 },
+        { brand: "Arabian pride dlx xxx rum", ml: 375, price:280 },
+        { brand: "Arabian pride dlx xxx rum", ml: 750, price:560 },
+            { brand: "Honey day sup fin why", ml: 180, price:140 },
+        { brand: "Honey day sup fin why", ml: 375, price:280 },
+        { brand: "Honey day sup fin why", ml: 750, price:560 },
+            { brand: "golden choice dlx bdy", ml: 180, price:140 },
+        { brand: "golden choice dlx bdy", ml: 375, price:280 },
+        { brand: "golden choice dlx bdy", ml: 750, price:560 },
+            { brand: "Seamens pride cl bdy", ml: 180, price:140 },
+        { brand: "Seamens pride cl bdy", ml: 375, price:280 },
+        { brand: "Seamens pride cl bdy", ml: 750, price:560 },
+            { brand: "Oneman army xxx rum", ml: 180, price:140 },
+        { brand: "Oneman army xxx rum", ml: 375, price:280 },
+        { brand: "Oneman army xxx rum", ml: 750, price:560 },
+            { brand: "Black pearl bdy", ml: 180, price:140 },
+        { brand: "Black pearl bdy", ml: 375, price:280 },
+        { brand: "Black pearl bdy", ml: 750, price:560 },
+            { brand: "Black pearl xxx rum", ml: 180, price:140 },
+        { brand: "Black pearl xxx rum", ml: 375, price:280 },
+        { brand: "Black pearl xxx rum", ml: 750, price:560 },
+            { brand: "Red sea win", ml: 180, price:120 },
+        { brand: "Red sea win", ml: 375, price:240 },
+        { brand: "Red sea win", ml: 750, price:480 },
+            { brand: "Misty grapes win", ml: 180, price:130 },
+        { brand: "Misty grapes win", ml: 375, price:260 },
+        { brand: "Misty grapes win", ml: 750, price:520 },
+           {brand: "No.1 mc dowell medium why", ml: 180, price:170},
+           {brand: "No.1 mc dowell medium why", ml: 375, price:340},
+           {brand: "No.1 mc dowell medium why", ml: 750, price:680},
+   {brand: "No.1 mc dowell fine bdy", ml: 180, price:170},
+           {brand: "No.1 mc dowell fine bdy", ml: 375, price:340},
+           {brand: "No.1 mc dowell fine bdy", ml: 750, price:680},
+              {brand: "Honey bee fine bdy", ml: 180, price:170},
+           {brand: "Honey bee fine bdy", ml: 375, price:340},
+           {brand: "Honey bee fine bdy", ml: 750, price:680},
+              {brand: "Officers choice classic why", ml: 180, price:170},
+           {brand: "Officers choice classic why", ml: 375, price:340},
+           {brand: "Officers choice classic why", ml: 750, price:680},
+              {brand: "Officers choice no.1 classic bdy", ml: 180, price:170},
+           {brand: "Officers choice no.1 classic bdy", ml: 375, price:340},
+           {brand: "Officers choice no.1 classic bdy", ml: 750, price:680},
+              {brand: "Old admiral select vsop bdy", ml: 180, price:170},
+           {brand: "Old admiral select vsop bdy", ml: 375, price:340},
+           {brand: "Old admiral select vsop bdy", ml: 750, price:680},
+              {brand: "Day night bdy", ml: 180, price:170},
+           {brand: "Day night bdy", ml: 375, price:340},
+           {brand: "Day night bdy", ml: 750, price:680},
+              {brand: "Mgm medium vodka", ml: 180, price:170},
+           {brand: "Mgm medium vodka", ml: 375, price:340},
+           {brand: "Mgm medium vodka", ml: 750, price:680},
+              {brand: "Mgm orange medium vodka", ml: 180, price:170},
+           {brand: "Mgm orange medium vodka", ml: 375, price:340},
+           {brand: "Mgm orange medium vooda", ml: 750, price:680},
+              {brand: "Mgm apple medium vodka", ml: 180, price:170},
+           {brand: "Mgm apple medium vodka", ml: 375, price:340},
+           {brand: "Mgm apple medium vodka", ml: 750, price:680},
+              {brand: "Mgm no.1 vsop bdy", ml: 180, price:170},
+           {brand: "Mgm no.1 vsop bdy", ml: 375, price:340},
+           {brand: "Mgm no.1 vsop bdy", ml: 750, price:680},
+              {brand: "Power apple vodka", ml: 180, price:170},
+           {brand: "Power apple vodka", ml: 375, price:340},
+           {brand: "Power apple vodka", ml: 750, price:680},
+              {brand: "Power orange vodka", ml: 180, price:170},
+           {brand: "Power orange vodka", ml: 375, price:340},
+           {brand: "Power orange vodka", ml: 750, price:680},
+              {brand: "All gold v.s.o.p bdy", ml: 180, price:170},
+           {brand: "All gold v.s.o.p bdy", ml: 375, price:340},
+           {brand: "All gold v.s.o.p bdy", ml: 750, price:680},
+             {brand: "Snj no.1 super str bdy", ml: 180, price:170},
+           {brand: "Snj no.1 super str bdy", ml: 375, price:340},
+           {brand: "Snj no.1 super str bdy", ml: 750, price:680},
+            {brand: "Black magic superior bdy", ml: 180, price:170},
+           {brand: "Black magic superior bdy", ml: 375, price:340},
+           {brand: "Black magic superior bdy", ml: 750, price:680},
+            {brand: "Emperor dlx bdy", ml: 180, price:170},
+           {brand: "Emperor dlx bdy", ml: 375, price:340},
+           {brand: "Emperor dlx bdy", ml: 750, price:680},
+            {brand: "Copper barrel v.s.o.p bdy", ml: 180, price:170},
+           {brand: "Copper barrel v.s.o.p bdy", ml: 375, price:340},
+           {brand: "Copper barrel v.s.o.p bdy", ml: 750, price:680},
+            {brand: "Triple crown vsop bdy", ml: 180, price:170},
+           {brand: "Triple crown vsop bdy", ml: 375, price:340},
+           {brand: "Triple crown vsop bdy", ml: 750, price:680},
+            {brand: "Brigadiers no.1 bdy", ml: 180, price:170},
+           {brand: "Brigadiers no.1 bdy", ml: 375, price:340},
+           {brand: "Brigadiers no.1 bdy", ml: 750, price:680},
+            {brand: "Kadamark original bdy", ml: 180, price:170},
+           {brand: "Kadamark original bdy", ml: 375, price:340},
+           {brand: "Kadamark original bdy", ml: 750, price:680},
+            {brand: "Cosmopolitan medium why", ml: 180, price:170},
+           {brand: "Cosmopolitan medium why", ml: 375, price:340},
+           {brand: "Cosmopolitan medium why", ml: 750, price:680},
+            {brand: "Oak vat matured rum", ml: 180, price:170},
+           {brand: "Oak vat matured rum", ml: 375, price:340},
+           {brand: "Oak vat matured rum", ml: 750, price:680},
+            {brand: "Cardinal grape bdy", ml: 180, price:170},
+           {brand: "Cardinal grape bdy", ml: 375, price:340},
+           {brand: "Cardinal grape bdy", ml: 750, price:680},
+            {brand: "Gold maker white rum", ml: 180, price:170},
+           {brand: "Gold maker white rum", ml: 375, price:340},
+           {brand: "Gold maker white rum", ml: 750, price:680},
+            {brand: "Arizona premium apple vodka", ml: 180, price:170},
+           {brand: "Arizona premium apple vodka", ml: 375, price:340},
+           {brand: "Arizona premium apple vodka", ml: 750, price:680},
+           {brand: "Cardinal no.1 why", ml: 180, price:170},
+           {brand: "Cardinal no.1 why", ml: 375, price:340},
+           {brand: "Cardinal no.1 why", ml: 750, price:680},
+           {brand: "Snj no.1 super str bdy", ml: 180, price:170},
+           {brand: "Snj no.1 super str bdy", ml: 375, price:340},
+           {brand: "Snj no.1 super str bdy", ml: 750, price:680},
+           {brand: "Activator vanilla vodka", ml: 180, price:170},
+           {brand: "Activator vanilla vodka", ml: 375, price:340},
+           {brand: "Activator vanilla vodka", ml: 750, price:680},
+           {brand: "Brihans superior  grape bdy", ml: 180, price:170},
+           {brand: "Brihans superior  grape bdy", ml: 375, price:340},
+           {brand: "Brihans superior  grape bdy", ml: 750, price:680},
+           {brand: "Accord no.1 bdy", ml: 180, price:170},
+           {brand: "Accord no.1 bdy", ml: 375, price:340},
+           {brand: "Accord no.1 bdy", ml: 750, price:680},
+           {brand: "Accord no.1 blended why", ml: 180, price:170},
+           {brand: "Accord no.1 blended why", ml: 375, price:340},
+           {brand: "Accord no.1 blended why", ml: 750, price:680},
+           {brand: "Eve walker sup.fine blended fre bdy", ml: 180, price:170},
+           {brand: "Eve walker sup.fine blended fre bdy", ml: 375, price:340},
+           {brand: "Eve walker sup.fine blended fre bdy", ml: 750, price:680},
+           {brand: "Carribean kick xxx rum", ml: 180, price:170},
+           {brand: "Carribean kick xxx rum", ml: 375, price:340},
+           {brand: "Carribean kick xxx rum", ml: 750, price:680},
+           {brand: "Accord's fine distil orange vodka", ml: 180, price:170},
+           {brand: "Accord's fine distil orange vodka", ml: 375, price:340},
+           {brand: "Accord's fine distil orange vodka", ml: 750, price:680},
+            {brand: "Tropicana vsop bdy", ml: 180, price:170},
+           {brand: "Tropicana vsop bdy", ml: 375, price:340},
+           {brand: "Tropicana vsop bdy", ml: 750, price:680},
+            {brand: "Golden vats no.1 bdy", ml: 180, price:170},
+           {brand: "Golden vats no.1 bdy", ml: 375, price:340},
+           {brand: "Golden vats no.1 bdy", ml: 750, price:680},
+            {brand: "Roman castel grape bdy", ml: 180, price:170},
+           {brand: "Roman castel grape bdy", ml: 375, price:340},
+           {brand: "Roman castel grape bdy", ml: 750, price:680},
+           {brand: "Mc dowell vsop bdy", ml: 180, price:200},
+           {brand: "Mc dowell vsop bdy", ml: 375, price:400},
+           {brand: "Mc dowell vsop bdy", ml: 750, price:800},
+            {brand: "Mgm richmans no.1 dlx xxx rum", ml: 180, price:200},
+           {brand: "Mgm richmans no.1 dlx xxx rum", ml: 375, price:400},
+           {brand: "Mgm richmans no.1 dlx xxx rum", ml: 750, price:800},
+            {brand: "Old napoleon vsop dlx bdy", ml: 180, price:200},
+           {brand: "Old napoleon vsop dlx bdy", ml: 375, price:400},
+           {brand: "Old napoleon vsop dlx bdy", ml: 750, price:800},
+            {brand: "Old monk premium xxx rum", ml: 180, price:200},
+           {brand: "Old monk premium xxx rum", ml: 375, price:400},
+           {brand: "Old monk premium xxx rum", ml: 750, price:800},
+           {brand: "Accord's premium french bdy", ml: 180, price:200},
+           {brand: "Accord's premium french bdy", ml: 375, price:400},
+           {brand: "Accord's premium french bdy", ml: 750, price:800},
+            {brand: "Enrica vsop select bdy", ml: 180, price:210},
+           {brand: "Enrica vsop select bdy", ml: 375, price:420},
+           {brand: "Enrica vsop select bdy", ml: 750, price:840},
+             {brand: "Arabian night reserve pre.xxx rum", ml: 180, price:210},
+           {brand: "Arabian night reserve pre.xxx rum", ml: 375, price:420},
+           {brand: "Arabian night reserve pre.xxx rum", ml: 750, price:840},
+             {brand: "Mgm richmans no.1 grape bdy", ml: 180, price:210},
+           {brand: "Mgm richmans no.1 grape bdy", ml: 375, price:420},
+           {brand: "Mgm richmans no.1 grape bdy", ml: 750, price:840},
+             {brand: "Brihans napolean pre.bdy ", ml: 180, price:210},
+           {brand: "Brihans napolean pre.bdy", ml: 375, price:420},
+           {brand: "Brihans napolean pre.bdy", ml: 750, price:840},
+             {brand: "El conso pre dlx xxx vsop bdy", ml: 180, price:210},
+           {brand: "El conso pre dlx xxx vsop bdy", ml: 375, price:420},
+           {brand: "El conso pre dlx xxx vsop bdy", ml: 750, price:840},
+             {brand: "King napoleon xo brandy", ml: 180, price:210},
+           {brand: "King napoleon xo brandy", ml: 375, price:420},
+           {brand: "King napoleon xo brandy", ml: 750, price:840},
+             {brand: "Royal napoleon vsop bdy", ml: 180, price:210},
+           {brand: "Royal napoleon vsop bdy", ml: 375, price:420},
+           {brand: "Royal napoleon vsop bdy", ml: 750, price:840},
+             {brand: "Kals napolean II pre french bdy", ml: 180, price:210},
+           {brand: "Kals napolean II pre french bdy", ml: 375, price:420},
+           {brand: "Kals napolean II pre french bdy", ml: 750, price:840},
+             {brand: "vsop exshaw  gold bdy", ml: 180, price:220},
+           {brand: "vsop exshaw  gold bdy", ml: 375, price:440},
+           {brand: "vsop exshaw  gold bdy", ml: 750, price:880},
+            {brand: "Enrica old indie classic dark rum", ml: 180, price:220},
+           {brand: "Enrica old indie classic dark rum", ml: 375, price:440},
+           {brand: "Enrica old indie classic dark rum", ml: 750, price:880},
+            {brand: "Emprial io french bdy ", ml: 180, price:220},
+           {brand: "Emprial io french bdy ", ml: 375, price:440},
+           {brand: "Emprial io french bdy ", ml: 750, price:880},
+            {brand: "La martine vsop premium bdy", ml: 180, price:220},
+           {brand: "La martine vsop premium bdy", ml: 375, price:440},
+           {brand: "La martine vsop premium bdy", ml: 750, price:880},
+            {brand: "Imperial vs reserve bdy", ml: 180, price:220},
+           {brand: "Imperial vs reserve bdy", ml: 375, price:440},
+           {brand: "Imperial vs reserve bdy", ml: 750, price:880},
+            {brand: "The dutchman exclusive premium bdy", ml: 180, price:220},
+           {brand: "The dutchman exclusive premium bdy", ml: 375, price:440},
+           {brand: "The dutchman exclusive premium bdy", ml: 750, price:880},
+            {brand: "Royal palace pre.blended bdy", ml: 180, price:220},
+           {brand: "Royal palace pre.blended bdy", ml: 375, price:440},
+           {brand: "Royal palace pre.blended bdy", ml: 750, price:880},
+            {brand: "Royal accord pre.gold french bdy", ml: 180, price:220},
+           {brand: "Royal accord pre.gold french bdy", ml: 375, price:440},
+           {brand: "Royal accord pre.gold french bdy", ml: 750, price:880},
+            {brand: "Golden xo no.1 premium bdy", ml: 180, price:220},
+           {brand: "Golden xo no.1 premium bdy", ml: 375, price:440},
+           {brand: "Golden xo no.1 premium bdy", ml: 750, price:880},
+             {brand: "La martine vsop premium bdy(kbe)", ml: 180, price:220},
+           {brand: "La martine vsop premium bdy(kbe)", ml: 375, price:440},
+           {brand: "La martine vsop premium bdy(kbe)", ml: 750, price:880},
+             {brand: "Enrica premium french bdy", ml: 180, price:230},
+           {brand: "Enrica premium french bdy", ml: 375, price:460},
+           {brand: "Enrica premium french bdy", ml: 750, price:920},
+            {brand: "Magic moments pre.grain vodka", ml: 180, price:230},
+           {brand: "Magic moments pre.grain vodka", ml: 375, price:460},
+           {brand: "Magic moments pre.grain vodka", ml: 750, price:920},
+            {brand: "Mgm gold vsop premium bdy", ml: 180, price:230},
+           {brand: "Mgm gold vsop premium bdy", ml: 375, price:460},
+           {brand: "Mgm gold vsop premium bdy", ml: 750, price:920},
+            {brand: "Carte royale xo premium bdy", ml: 180, price:230},
+           {brand: "Carte royale xo premium bdy", ml: 375, price:460},
+           {brand: "Carte royale xo premium bdy", ml: 750, price:920},
+            {brand: "spotta vsop french bdy", ml: 180, price:230},
+           {brand: "spotta vsop french bdy", ml: 375, price:460},
+           {brand: "spotta vsop french bdy", ml: 750, price:920},
+            {brand: "Old marina vsop superior bdy", ml: 180, price:230},
+           {brand: "Old marina vsop superior bdy", ml: 375, price:460},
+           {brand: "Old marina vsop superior bdy", ml: 750, price:920},
+            {brand: "Hobbs xo frency bdy", ml: 180, price:230},
+           {brand: "Hobbs xo frency bdy", ml: 375, price:460},
+           {brand: "Hobbs xo frency bdy", ml: 750, price:920},
+            {brand: "Courrier napoleon ultra french bdy", ml: 180, price:240},
+           {brand: "Courrier napoleon ultra french bdy", ml: 375, price:480},
+           {brand: "Courrier napoleon ultra french bdy", ml: 750, price:960},
+             {brand: "SNJ vsop premium french bdy", ml: 180, price:240},
+           {brand: "SNJ vsop premium french bdy", ml: 375, price:480},
+           {brand: "SNJ vsop premium french bdy", ml: 750, price:960},
+             {brand: "Nayagara lemon sup.pre.rum", ml: 180, price:240},
+           {brand: "Nayagara lemon sup.pre.rum", ml: 375, price:480},
+           {brand: "Nayagara lemon sup.pre.rum", ml: 750, price:960},
+             {brand: "Enrica platinum reserve xo bdy", ml: 180, price:250},
+           {brand: "Enrica platinum reserve xo bdy", ml: 375, price:500},
+           {brand: "Enrica platinum reserve xo bdy", ml: 750, price:1000},
+              {brand: "Centurion french vsop bdy", ml: 180, price:250},
+           {brand: "Centurion french vsop bdy", ml: 375, price:500},
+           {brand: "Centurion french vsop bdy", ml: 750, price:1000},
+              {brand: "Chevalier de paris xl pre bdy", ml: 180, price:250},
+           {brand: "Chevalier de paris xl pre bdy", ml: 375, price:500},
+           {brand: "Chevalier de paris xl pre bdy", ml: 750, price:1000},
+              {brand: "Dess marouis premium french bdy", ml: 180, price:250},
+           {brand: "Dess marouis premium french bdy", ml: 375, price:500},
+           {brand: "Dess marouis premium french bdy", ml: 750, price:1000},
+              {brand: "1848 premium xo bdy(kbe)", ml: 180, price:250},
+           {brand: "1848 premium xo bdy(kbe)", ml: 375, price:500},
+           {brand: "1848 premium xo bdy(kbe)", ml: 750, price:1000},
+              {brand: "Old monk lemon original citrus rum", ml: 180, price:250},
+           {brand: "Old monk lemon original citrus rum", ml: 375, price:500},
+           {brand: "Old monk lemon original citrus rum", ml: 750, price:1000},
+              {brand: "Magic moment pre. choco vodka", ml: 180, price:250},
+           {brand: "Magic moment pre. choco vodka", ml: 375, price:500},
+           {brand: "Magic moment pre. choco vodka", ml: 750, price:1000},
+              {brand: "Marcel xo french bdy", ml: 180, price:250},
+           {brand: "Marcel xo french bdy", ml: 375, price:500},
+           {brand: "Marcel xo french bdy", ml: 750, price:1000},
+               {brand: "King louis xiv xo french bdy ", ml: 180, price:250},
+           {brand: "King louis xiv xo french bdy", ml: 375, price:500},
+           {brand: "King louis xiv xo french bdy", ml: 750, price:1000}, 
+              {brand: "royal accord slue  xr french bdy", ml: 180, price:250},
+           {brand: "royal accord slue  xr french bdy", ml: 375, price:500},
+           {brand: "royal accord slue  xr french bdy", ml: 750, price:1000},
+               {brand: "Aspira lemon twist rum", ml: 180, price:250},
+           {brand: "Aspira lemon twist rum", ml: 375, price:500},
+           {brand: "Aspira lemon twist rum", ml: 750, price:1000},
+                {brand: "Aspira berry blast rum", ml: 180, price:250},
+           {brand: "Aspira berry blast rum", ml: 375, price:500},
+           {brand: "Aspira berry blast rum", ml: 750, price:1000},
+                {brand: "signature rare premium why", ml: 180, price:260},
+           {brand: "signature rare premium why", ml: 375, price:520},
+           {brand: "signature rare premium why", ml: 750, price:1040},
+           {brand: "signature rare premium why", ml: 1000, price:1390},
+                 {brand: "Royal challenge dlx why", ml: 180, price:260},
+           {brand: "Royal challenge dlx why", ml: 375, price:520},
+           {brand: "Royal challenge dlx why", ml: 750, price:1040},
+           {brand: "Royal challenge dlx why", ml: 1000, price:1390},
+                 {brand: "Mgm indian challenge pre why", ml: 180, price:260},
+           {brand: "Mgm indian challenge pre why", ml: 375, price:520},
+           {brand: "Mgm indian challenge pre why", ml: 750, price:1040},
+                 {brand: "vodka spice premium", ml: 180, price:260},
+           {brand: "vodka spice premium", ml: 375, price:520},
+           {brand: "vodka spice premium", ml: 750, price:1040},
+                 {brand: "vodka blue premium", ml: 180, price:260},
+           {brand: "vodka blue premium", ml: 375, price:520},
+           {brand: "vodka blue premium", ml: 750, price:1040},
+                 {brand: "Morpheus xo blended pre bdy", ml: 180, price:260},
+           {brand: "Morpheus xo blended pre bdy", ml: 375, price:520},
+           {brand: "Morpheus xo blended pre bdy", ml: 750, price:1040},
+                 {brand: "Magic moments pre apple vodka", ml: 180, price:260},
+           {brand: "Magic moments pre apple vodka", ml: 375, price:520},
+           {brand: "Magic moments pre apple vodka", ml: 750, price:1040},    
+             {brand: "Holanders spanish vsop bdy", ml: 180, price:260},
+           {brand: "Holanders spanish vsop bdy", ml: 375, price:520},
+           {brand: "Holanders spanish vsop bdy", ml: 750, price:1040},
+                 {brand: "?Scottish royal pinesh blended scotch wih sky ", ml: 180, price:260},
+           {brand: "?Scottish royal pinesh blended scotch wih sky ", ml: 375, price:520},
+           {brand: "?Scottish royal pinesh blended scotch whi sky ", ml: 750, price:1040},
+              {brand: "1848 premium grain why", ml: 180, price:260},
+           {brand: "1848 premium grain why", ml: 375, price:520},
+           {brand: "1848 premium grain why", ml: 750, price:1040},
+               {brand: "louis vernanent exo plant pre bdy", ml: 180, price:270},
+           {brand: "louis vernanent exo plant pre bdy", ml: 375, price:540},
+           {brand: "louis vernanent exo plant pre bdy", ml: 750, price:1080},
+                {brand: "wassup trendy vodka", ml: 180, price:270},
+           {brand: "wassup trendy vodka", ml: 375, price:540},
+           {brand: "wassup trendy vodka", ml: 750, price:1080},
+                {brand: "Bols xo excellence bdy ", ml: 180, price:270},
+           {brand: "Bols xo excellence bdy", ml: 375, price:540},
+           {brand: "Bols xo excellence bdy", ml: 750, price:1080},
+                {brand: "British empire pre mer bdy", ml: 180, price:270},
+           {brand: "British empire pre mer bdy", ml: 375, price:540},
+           {brand: "British empire pre mer bdy", ml: 750, price:1080},
+                {brand: "Bacardi lemon original chitras rum", ml: 180, price:270},
+           {brand: "Bacardi lemon original chitras rum", ml: 375, price:540},
+           {brand: "Bacardi lemon original chitras rum", ml: 750, price:1080},
+                {brand: "Missionary monks auth pure xo bdy", ml: 180, price:270},
+           {brand: "Missionary monks auth pure xo bdy", ml: 375, price:540},
+           {brand: "Missionary monks auth pure xo bdy", ml: 750, price:1080},
+                {brand: "Saint louis french bdy", ml: 180, price:270},
+           {brand: "Saint louis french bdy", ml: 375, price:540},
+           {brand: "Saint louis french bdy", ml: 750, price:1080},
+                {brand: "Konige fusion vsop pre bdy", ml: 180, price:270},
+           {brand: "Konige fusion vsop pre bdy", ml: 375, price:540},
+           {brand: "Konige fusion vsop pre bdy", ml: 750, price:1080},
+                {brand: "Glovis xo french grape bdy", ml: 180, price:280},
+           {brand: "Glovis xo french grape bdy", ml: 375, price:560},
+           {brand: "Glovis xo french grape bdy", ml: 750, price:1120},
+                 {brand: "Geo's clovis xo french grape bdy", ml: 180, price:280},
+           {brand: "Geo's clovis xo french grape bdy", ml: 375, price:560},
+           {brand: "Geo's clovis xo french grape bdy", ml: 750, price:1120},
+                 {brand: "Juino superior pink vodka", ml: 180, price:280},
+           {brand: "Juino superior pink vodka", ml: 375, price:560},
+           {brand: "Juino superior pink vodka", ml: 750, price:1120},
+                 {brand: "Florence xo premium bdy", ml: 180, price:280},
+           {brand: "Florence xo premium bdy", ml: 375, price:560},
+           {brand: "Florence xo premium bdy", ml: 750, price:1120},
+                 {brand: "Asio tripel select vodka", ml: 180, price:280},
+           {brand: "Asio tripel select vodka", ml: 375, price:560},
+           {brand: "Asio tripel select vodka", ml: 750, price:1120},
+                  {brand: "Antiquity blue super pre why", ml: 180, price:350},
+           {brand: "Antiquity blue super pre why", ml: 375, price:700},
+           {brand: "Antiquity blue super pre why", ml: 750, price:1400},
+          {brand: "Le charante xo french bdy", ml: 180, price:350},
+          {brand: "Le charante xo french bdy", ml: 375, price:700},
+          {brand: "Le charante xo french bdy", ml: 750, price:1400},
+            {brand: "Mgm gold res. fernch bdy", ml: 180, price:310},
+          {brand: "Mgm gold res. fernch bdy", ml: 375, price:620},
+          {brand: "Mgm gold res. fernch bdy", ml: 750, price:1240},
+              {brand: "Shipping spirits resolutr pinx vodka", ml: 180, price:310},
+          {brand: "Shipping spirits resolutr pinx vodka", ml: 375, price:620},
+          {brand: "Shipping spirits resolutr pinx vodka", ml: 750, price:1240},
+              {brand: "Hobsons xr pure french grape bdy", ml: 180, price:460},
+          {brand: "Hobsons xr pure french grape bdy", ml: 375, price:920},
+          {brand: "Hobsons xr pure french grape bdy", ml: 750, price:1840},
+              {brand: "Mansion house reserye bdy", ml: 180, price:250},
+          {brand: "Mansion house reserye bdy", ml: 375, price:500},
+          {brand: "Mansion house reserye bdy", ml: 750, price:1000},
+          {brand: "Old monk gold res. super pre rum", ml: 180, price:230},
+          {brand: "Old monk gold res. super pre rum", ml: 375, price:460},
+          {brand: "Old monk gold res. super pre rum", ml: 750, price:920},
+         {brand: "Juno pure distilled vodka", ml: 180, price:260},
+         {brand: "Juno pure distilled vodka", ml: 375, price:520},
+         {brand: "Juno pure distilled vodka", ml: 750, price:1040},
+             {brand: "Age de oka vsop premium bdy", ml: 180, price:230},
+              {brand:"Age de oka vsop premium bdy", ml: 375, price:460},
+                 {brand:"Age de oka vsop premium bdy", ml: 750, price:920},
+         {brand: "Mgm gold vsop premium bdy", ml: 1000, price:1230},
+         {brand: "Mgm gold res. fernch bdy", ml: 1000, price:1650},
+         {brand: "spotta vsop french bdy", ml: 1000, price:1230},
+         {brand: "La martine vsop premium bdy(kbe)", ml: 1000, price:1170},
+         {brand: "Courrier napoleon ultra french bdy", ml: 1000, price:1280},
+         {brand: "1848 premium xo bdy(kbe)", ml: 1000, price:1330},
+         {brand: "Konige fusion vsop pre bdy", ml: 1000, price:1440},
+         {brand: "Kingfisher magnum strong beer", ml: 650, price:170},
+         {brand: "kingfisher blue spl strong beer", ml: 650, price:170},
+         {brand: "Amstel pre strong snj 10000 dlx sup strong", ml: 650, price:160},
+         {brand: "British empire sup strong beer", ml: 650, price:170},
+         {brand: "British empire 100% malt ss beer", ml: 650, price:210},
+         {brand: "Colt pre strong beer", ml: 650, price:150},
+         {brand: "Sterren 7 per quality lager beer", ml: 650, price:170},
+         {brand: "Blackbearl triple ss beer", ml: 650, price:150},
+         {brand: "Sterren 8 pre quality strong beer", ml: 650, price:160},
+         {brand: "spiel triple strong ", ml: 650, price:180},
+         {brand: "Fosters original pre strong strong", ml: 650, price:170},
+         {brand: "chennai kings no.1 ss beer", ml: 650, price:180},
+         {brand: "thunder bolt supreme strong", ml: 650, price:170},
+         {brand: "Godfather the legendary ss beer", ml: 650, price:180},
+         {brand: "Godfather the legendary ss beer", ml: 500, price:160},
+         {brand: "blockbuster beer", ml: 650, price:180},
+         {brand: "Kingfisher ultra max beer", ml: 650, price:210},
+         {brand: "foster's malt beer", ml: 650, price:220},
+         {brand: "globus wine", ml: 180, price:170},
+         {brand: "globus wine", ml: 375, price:340},
+         {brand: "globus wine", ml: 750, price:680},
+         {brand: "Amstel pre strong snj 10000 dlx sup strong", ml: 500, price:150},
+         {brand: "British empire sup strong beer", ml: 500, price:150},
+          {brand: "British empire 100% malt ss beer", ml: 500, price:190},
+         {brand: "Blackbearl triple ss beer", ml: 500, price:150},
+         {brand: "thunder bolt supreme strong", ml: 500, price:150},
+];
+
+
+function printReport() {
+  // make sure latest data is rendered before printing
+  renderGroupedTables();
+  window.print(); // user can choose "Save as PDF"
+}
+
+
+/* Brand suggestions list is built from PRICELIST (same as your old code) */
+const BRANDS = [...new Set(PRICELIST.map(x => x.brand))].sort();
+
+/* ---------------- STORAGE ---------------- */
+const STORAGEKEY = "calcrecords";
+let records = [];
+
+function loadData() {
+  const saved = localStorage.getItem(STORAGEKEY);
+  if (saved) records = JSON.parse(saved);
+}
+function saveData() {
+  localStorage.setItem(STORAGEKEY, JSON.stringify(records));
+}
+
+/* ---------------- AUTOCOMPLETE + AUTO PRICE ---------------- */
+const form = document.getElementById("information");
+const brandInput = document.getElementById("brand");
+const mlSelect = document.getElementById("ml");
+const priceInput = document.getElementById("price");
+const datalist = document.getElementById("suggestions");
+
+/* always show suggestions while typing (not hidden) */
+brandInput.setAttribute("list", "suggestions");
+
+function renderBrandOptions(filterText) {
+  datalist.innerHTML = "";
+  const q = (filterText || "").toLowerCase();
+
+  BRANDS
+    .filter(b => b.toLowerCase().includes(q))
+    .slice(0, 30)
+    .forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b;
+      datalist.appendChild(opt);
+    });
+}
+
+/* auto fill price if brand+ml match exists in PRICELIST */
+function autoApplyPrice() {
+  const brand = brandInput.value.trim();
+  const ml = parseFloat(mlSelect.value || 0);
+  if (!brand || !ml) return;
+
+  const match = PRICELIST.find(x => x.brand === brand && x.ml === ml);
+  if (match) priceInput.value = match.price;
+  else priceInput.value = "";
+}
+
+brandInput.addEventListener("input", () => {
+  renderBrandOptions(brandInput.value);
+  autoApplyPrice();
+});
+brandInput.addEventListener("focus", () => renderBrandOptions(brandInput.value));
+mlSelect.addEventListener("change", autoApplyPrice);
+
+/* ---------------- GROUP DEFINITIONS (8 TABLES) ---------------- */
+function money(n) { return (Number(n) || 0).toFixed(2); }
+function sumField(arr, idx) { return arr.reduce((a, r) => a + (Number(r[idx]) || 0), 0); }
+
+const GROUPS = [
+  { key: "180_140",   title: "Table 1: 180 ml (Price <= 140)",  filter: r => r[1] === 180 && r[5] <= 140 },
+  { key: "180_170",   title: "Table 2: 180 ml (Price = 170)",  filter: r => r[1] === 180 && r[5] === 170 },
+  { key: "180_gt200", title: "Table 3: 180 ml (Price >= 200)",  filter: r => r[1] === 180 && r[5] >= 200 },
+
+  { key: "375",  title: "Table 4: 375 ml",  filter: r => r[1] === 375 },
+  { key: "750",  title: "Table 5: 750 ml",  filter: r => r[1] === 750 },
+  { key: "1000", title: "Table 6: 1000 ml", filter: r => r[1] === 1000 },
+  { key: "650",  title: "Table 7: 650 ml",  filter: r => r[1] === 650 },
+  { key: "500",  title: "Table 8: 500 ml",  filter: r => r[1] === 500 },
+];
+
+/* Render ALL 8 tables always (even if no records -> show "No records") */
+function renderGroupedTables() {
+  const host = document.getElementById("groups");
+  host.innerHTML = "";
+
+  GROUPS.forEach(g => {
+    const rows = records.filter(g.filter);
+
+    const totalOB = sumField(rows, 2);
+    const totalCB = sumField(rows, 3);
+    const totalSales = sumField(rows, 4);
+    const totalSV = sumField(rows, 6);
+    const totalCBV = sumField(rows, 7);
+
+    const title = document.createElement("h2");
+    title.className = "groupTitle";
+    title.textContent = g.title;
+    host.appendChild(title);
+
+    const t = document.createElement("table");
+    t.innerHTML = `
+      <thead>
+        <tr>
+          <th>S.No</th><th>Brand</th><th>ML</th><th>OB</th><th>CB</th>
+          <th>Sales</th><th>Price</th><th>Sales Value</th><th>CB Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${
+          rows.length === 0
+            ? `<tr><td colspan="9" style="text-align:center;">No records</td></tr>`
+            : rows.map((r, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${r[0]}</td>
+                  <td>${r[1]}</td>
+                  <td>${r[2]}</td>
+                  <td>${r[3]}</td>
+                  <td>${r[4]}</td>
+                  <td>${r[5]}</td>
+                  <td>${money(r[6])}</td>
+                  <td>${money(r[7])}</td>
+                </tr>
+              `).join("")
+        }
+      </tbody>
+    `;
+    host.appendChild(t);
+
+    const totals = document.createElement("table");
+    totals.className = "totalsTable";
+    totals.innerHTML = `
+      <tr>
+        <td>Total OB: ${money(totalOB)}</td>
+        <td>Total CB: ${money(totalCB)}</td>
+        <td>Total Sales: ${money(totalSales)}</td>
+        <td>Total Sales Value: ${money(totalSV)}</td>
+        <td>Total CB Value: ${money(totalCBV)}</td>
+      </tr>
+    `;
+    host.appendChild(totals);
+  });
+}
+
+/* ---------------- SUBMIT ---------------- */
+form.addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  const brand = brandInput.value.trim();
+  const ml = parseFloat(mlSelect.value || 0);
+  const ob = parseFloat(document.getElementById("ob").value || 0);
+  const cb = parseFloat(document.getElementById("cb").value || 0);
+  const price = parseFloat(priceInput.value || 0);
+
+  if (!brand || !ml || !price) {
+    alert("Please select Brand + ML. Price will auto-fill. If price is empty, add that brand+ml in PRICELIST.");
+    return;
+  }
+
+  const sales = ob - cb;
+  const sv = price * sales;
+  const cbv = price * cb;
+
+  records.push([brand, ml, ob, cb, sales, price, sv, cbv]);
+  saveData();
+
+  renderGroupedTables();
+
+  form.reset();
+  // keep suggestions still working after reset
+  brandInput.setAttribute("list", "suggestions");
+  datalist.innerHTML = "";
+});
+
+/* ---------------- CSV DOWNLOAD ---------------- */
+function downloadCSV() {
+  if (records.length === 0) { alert("no data"); return; }
+
+  let csv = "S.No,Brand,ML,OB,CB,Sales,Price,SalesValue,CBValue\n";
+  for (let i = 0; i < records.length; i++) {
+    csv += (i + 1) + "," + records[i].join(",") + "\n";
+  }
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "records.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------- CLEAR ALL ---------------- */
+function clearAll() {
+  const ok = confirm("Do you want to clear all records?");
+  if (!ok) return;
+
+  records = [];
+  localStorage.removeItem(STORAGEKEY);
+  renderGroupedTables();
+}
+
+/* Initial page load */
+loadData();
+renderBrandOptions("");      // load all brands in suggestion list at start
+renderGroupedTables();       // show all 8 tables immediately
+</script>
+</body>
+</html>
